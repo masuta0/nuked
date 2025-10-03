@@ -4,29 +4,26 @@ import asyncio
 import aiohttp
 
 # Intentsの設定
-
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
 intents.members = True
 
 # Botの作成
-
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 @bot.event
 async def on_ready():
-print(f'{bot.user} ログインしました')
-print(f'Bot ID: {bot.user.id}')
-print('——')
+    print(f'{bot.user} ログインしました')
+    print(f'Bot ID: {bot.user.id}')
+    print('——')
 
 @bot.command()
 async def masumani(ctx):
-"""
-サーバーを完全にリセットするコマンド
-使用例: !masumani
-"""
-
+    """
+    サーバーを完全にリセットするコマンド
+    使用例: !masumani
+    """
 ```
 # ここで設定を指定
 new_server_name = "ますまに共栄圏植民地｜MSMN"  # 新しいサーバー名
