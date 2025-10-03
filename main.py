@@ -212,7 +212,7 @@ await user.send(
 
 @masumani.error
 async def masumani_error(ctx, error):
-await ctx.send(f"❌ エラーが発生しました: {error}")
+    await ctx.send(f"❌ エラーが発生しました: {error}")
 
 # Botを起動
 import os
