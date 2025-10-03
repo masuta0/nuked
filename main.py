@@ -24,7 +24,7 @@ async def masumani(ctx):
     サーバーを完全にリセットするコマンド
     使用例: !masumani
     """
-```
+
 # ここで設定を指定
 new_server_name = "ますまに共栄圏植民地｜MSMN"  # 新しいサーバー名
 icon_url = "https://i.imgur.com/uMaj6CP.jpeg"  # imgurリンク（絵文字作成にも使用）
@@ -208,7 +208,7 @@ await user.send(
     f"📂 チャンネル作成: {created_count}個\n"
     f"💬 メッセージ送信: {total_messages}件"
 )
-```
+
 
 @masumani.error
 async def masumani_error(ctx, error):
