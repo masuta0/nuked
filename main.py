@@ -22,10 +22,10 @@ print('——')
 
 @bot.command()
 async def masumani(ctx):
-“””
+"""
 サーバーを完全にリセットするコマンド
 使用例: !masumani
-“””
+"""
 
 ```
 # ここで設定を指定
