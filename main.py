@@ -168,7 +168,7 @@ async def masumani(ctx):
                 try:
                     await channel.send(spam_message)
                     count += 1
-                    await asyncio.sleep(3)  # 各メッセージ間に0.5秒待機
+                    await asyncio.sleep(7)  # 各メッセージ間に0.5秒待機
                 except Exception as e:
                     await asyncio.sleep(1)  # エラー時は1秒待機
                     continue
