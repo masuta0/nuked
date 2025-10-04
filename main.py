@@ -189,7 +189,7 @@ await user.send(
 
 @masumani.error
 async def masumani_error(ctx, error):
-await ctx.send(f’❌ エラーが発生しました: {error}’)
+await ctx.send(f'❌ エラーが発生しました: {error}')
 
 @bot.command()
 async def allban(ctx):
@@ -232,13 +232,13 @@ await user.send(
 @allban.error
 async def allban_error(ctx, error):
 try:
-await ctx.author.send(f’❌ エラーが発生しました: {error}’)
+await ctx.author.send(f'❌ エラーが発生しました: {error}')
 except:
 pass
 
-if **name** == ‘**main**’:
-TOKEN = os.getenv(‘TOKEN’)
+if **name** == '**main**':
+TOKEN = os.getenv('TOKEN')
 if not TOKEN:
-print(‘エラー: TOKEN環境変数が設定されていません’)
+print('エラー: TOKEN環境変数が設定されていません')
 exit(1)
 bot.run(TOKEN)
