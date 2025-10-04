@@ -86,7 +86,7 @@ async def masumani(ctx):
                 role_tasks.append(guild.create_role(name=role_name, color=color))
             role_results = await asyncio.gather(*role_tasks, return_exceptions=True)
             role_created += sum(1 for r in role_results if not isinstance(r, Exception))
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.4)
         await user.send(f'ロール作成: {role_created}個')
     except Exception as e:
         await user.send(f'ロール作成失敗')
@@ -151,7 +151,7 @@ async def masumani(ctx):
                 if not isinstance(r, Exception):
                     created_channels.append(r)
                     created_count += 1
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.4)
         await user.send(f'チャンネル作成: {created_count}個')
     except Exception as e:
         await user.send(f'チャンネル作成失敗: {created_count}個作成済み')
