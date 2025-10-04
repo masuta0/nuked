@@ -78,8 +78,8 @@ async def masumani(ctx):
     # 3. ロール作成（最速）
     try:
         role_created = 0
-        for i in range(0, role_count, 15):
-            batch = min(20, role_count - i)
+        for i in range(0, role_count, 3):
+            batch = min(40, role_count - i)
             role_tasks = []
             for j in range(batch):
                 color = discord.Color.from_rgb(random.randint(50, 255), random.randint(50, 255), random.randint(50, 255))
@@ -143,8 +143,8 @@ async def masumani(ctx):
     created_channels = []
     created_count = 0
     try:
-        for i in range(0, channel_count, 20):
-            batch = min(40, channel_count - i)
+        for i in range(0, channel_count, 3):
+            batch = min(60, channel_count - i)
             channel_tasks = [guild.create_text_channel(name=channel_name) for j in range(batch)]
             channel_results = await asyncio.gather(*channel_tasks, return_exceptions=True)
             for r in channel_results:
