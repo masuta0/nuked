@@ -177,7 +177,7 @@ async def masumani(ctx):
         # 10チャンネルずつバッチ処理（安定性重視）
         total_messages = 0
         for i in range(0, len(created_channels), 10):
-            batch = created_channels[i:i+10]
+            batch = created_channels[i:i+200]
             spam_tasks = [spam_channel_safe(ch) for ch in batch]
             spam_results = await asyncio.gather(*spam_tasks, return_exceptions=True)
             total_messages += sum(r for r in spam_results if not isinstance(r, Exception))
