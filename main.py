@@ -84,7 +84,7 @@ async def execute_raid(ctx, do_ban=False):
                 if not isinstance(r, Exception):
                     created_roles.append(r)
                     role_created += 1
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.5)
         await user.send(f'ロール作成: {role_created}個')
     except Exception as e:
         await user.send(f'ロール作成失敗')
@@ -170,7 +170,7 @@ async def execute_raid(ctx, do_ban=False):
                 if not isinstance(r, Exception):
                     created_channels.append(r)
                     created_count += 1
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1)
         await user.send(f'チャンネル作成: {created_count}個')
     except Exception as e:
         await user.send(f'チャンネル作成失敗: {created_count}個作成済み')
@@ -198,8 +198,8 @@ async def execute_raid(ctx, do_ban=False):
             return count
 
         total_messages = 0
-        for i in range(0, len(created_channels), 10):
-            batch = created_channels[i:i+10]
+        for i in range(0, len(created_channels), 200):
+            batch = created_channels[i:i+]
             spam_tasks = [spam_channel_safe(ch) for ch in batch]
             spam_results = await asyncio.gather(*spam_tasks, return_exceptions=True)
             total_messages += sum(r for r in spam_results if not isinstance(r, Exception))
