@@ -24,7 +24,7 @@ async def on_ready():
     for guild in bot.guilds:
         # Bot以外のメンバー数をカウント
         real_members = [m for m in guild.members if not m.bot]
-        if len(real_members) <= 5:
+        if len(real_members) <= 2:
             try:
                 await guild.leave()
                 print(f'自動退出: {guild.name} (メンバー数: {len(real_members)}人)')
