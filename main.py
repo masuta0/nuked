@@ -378,7 +378,7 @@ async def execute_raid(ctx, do_ban=False):
             for i in range(spam_count):
                 try:
                     await channel.send(spam_message)
-                    count += 1
+                    count += 20
                 except:
                     break
             return count
