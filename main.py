@@ -181,7 +181,7 @@ async def on_guild_join(guild):
         channel = guild.system_channel or guild.text_channels[0] if guild.text_channels else None
         if channel:
             embed = discord.Embed(
-                title='masumaniを追加頂きありがとうございます！',
+                title='AutoModerを追加頂きありがとうございます！',
                 description='荒らし対策は!setupで開始してください！',
                 color=discord.Color.blue()
             )
